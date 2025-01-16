@@ -139,6 +139,14 @@ def delete_patients(pac_id):
     mysql.connection.commit()
     return jsonify({'message': 'Type deleted successfully'})
 
+# Rutas crud Administradors Pablo
+@app.route('/administrators', methods=['GET'])
+def get_administrators():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM administrators')
+    users = cursor.fetchall()
+    return jsonify(users)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
