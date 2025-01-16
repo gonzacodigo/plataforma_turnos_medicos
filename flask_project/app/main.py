@@ -147,6 +147,34 @@ def get_administrators():
     users = cursor.fetchall()
     return jsonify(users)
 
+
+@app.route('/administrators', methods=['POST'])
+def create_administrators():
+    data = request.get_json()
+    usr_id = data['usr_id']
+    cursor = mysql.connection.cursor()
+    cursor.execute('INSERT INTO administrators (usr_id) VALUES (%s)', (usr_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'User created successfully'}), 201
+
+@app.route('/administrators/<int:adm_id>', methods=['PUT'])
+def update_administrators(adm_id):
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        UPDATE administrators SET usr_id = %s
+        WHERE adm_id = %s
+        ''', (data['usr_id'], adm_id))
+    mysql.connection.commit()
+    return jsonify({'message': 'administrators updated successfully'})
+
+@app.route('/administrators/<int:adm_id>', methods=['DELETE'])
+def delete_administrators(adm_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('DELETE FROM administrators WHERE adm_id = %s', (adm_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'Administradro deleted successfully'})    
+
 # Rutas para el CRUD de specialities
 # Realizado por Daniel
 
@@ -281,6 +309,81 @@ def delete_doctor(doc_id):
     cursor.execute('DELETE FROM doctors WHERE doc_id = %s', (doc_id,))
     mysql.connection.commit()
     return jsonify({'message': 'Doctor deleted successfully'})
+
+######## doctors _ Medicares tabla intermedia #################
+#### pablo
+@app.route('/doctors_medicares', methods=['GET'])
+def get_doctors_medicares():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM doctors_medicares')
+    users = cursor.fetchall()
+    return jsonify(users)
+
+@app.route('/doctors_medicares', methods=['POST'])
+def create_doctors_medicares():
+    data = request.get_json()
+    doc_id = data['doc_id']
+    os_id = data['os_id']
+    cursor = mysql.connection.cursor()
+    cursor.execute('INSERT INTO doctors_medicares (doc_id, os_id) VALUES (%s,%s)', (doc_id, os_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'doctors_medicares created successfully'}), 201
+
+@app.route('/doctors_medicares/<int:id>', methods=['PUT'])
+def update_doctors_medicares(id):
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        UPDATE doctors_medicares SET doc_id = %s, os_id= %s
+        WHERE id = %s
+    ''', (data['doc_id'], data['os_id'], id))
+    mysql.connection.commit()
+    return jsonify({'message': 'doctors_medicares updated successfully'})
+
+@app.route('/doctors_medicares/<int:id>', methods=['DELETE'])
+def delete_doctors_medicares(id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('DELETE FROM doctors_medicares WHERE id = %s', (id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'doctors_medicares deleted successfully'})  
+
+################# medicares  ###########
+### pablo
+@app.route('/medicares', methods=['GET'])
+def get_medicares():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM medicares')
+    users = cursor.fetchall()
+    return jsonify(users)
+
+@app.route('/medicares', methods=['POST'])
+def post_medicares():
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''INSERT INTO medicares(os_name) 
+                   VALUES (%s)''', (data['os_name'],))
+    mysql.connection.commit()
+    return jsonify({'message': 'medicares created successfully'}), 201
+
+
+@app.route('/medicares/<int:os_id>', methods=['PUT'])
+def update_medicares(os_id):
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        UPDATE medicares SET os_name= %s
+        WHERE os_id = %s
+    ''', (data['os_name'], os_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'medicares updated successfully'})
+
+@app.route('/medicares/<int:os_id>', methods=['DELETE'])
+def delete_medicares(os_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('DELETE FROM medicares WHERE os_id = %s', (os_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'medicares deleted successfully'})  
+
 
 if __name__ == '__main__':
     app.run(debug=True)
