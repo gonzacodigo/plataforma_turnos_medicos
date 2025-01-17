@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DISPONIBILIDAD MEDICA</title>
+<link rel="stylesheet" href="/front/static/css/estilo_dias_no_laborales.css">
+</head>
+<body>
+  <h1>Registrar Disponibilidad del Doctor</h1>
+  <form id="availability-form">
+    <div>
+      <label for="doc_id">ID del Doctor:</label>
+      <input type="number" id="doc_id" name="doc_id" required>
+    </div>
+    <div>
+      <label for="start_time">Fecha de Inicio:</label>
+      <input type="date" id="start_time" name="start_time" required>
+    </div>
+    <div>
+      <label for="end_time">Fecha de Fin:</label>
+      <input type="date" id="end_time" name="end_time" required>
+    </div>
+    <div>
+      <label for="status">Estado:</label>
+      <select id="status" name="status" required>
+        <option value="Disponible">Disponible</option>
+        <option value="Bloqueado">Bloqueado</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit">Registrar</button>
+    </div>
+  </form>
+  <div class="message" id="message"></div>
+  <script src="/front/static/js/dias_no_laborales.js"></script>
+</body>
+</html>
