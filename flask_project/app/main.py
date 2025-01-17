@@ -773,6 +773,76 @@ def get_turns_options():
         turn['descripcion'] = f"{turn['tur_dia']} a las {turn['tur_hora']}"
     return jsonify(turns)
 
+@app.route('/doctors/options', methods=['GET'])
+def get_doctors_options():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT 
+            d.doc_id,
+            d.doc_matricula,
+            d.doc_type,
+            u.usr_name AS doctor_name,
+            e.esp_name AS speciality,
+            GROUP_CONCAT(DISTINCT m.os_name) AS medicares,
+            CONCAT(da.date, ' (', TIME_FORMAT(da.start_time, '%H:%i'), ' - ', TIME_FORMAT(da.end_time, '%H:%i'), ')') AS availability
+        FROM doctors d
+        LEFT JOIN users u ON d.usr_id = u.usr_id
+        LEFT JOIN specialities e ON d.esp_id = e.esp_id
+        LEFT JOIN doctors_medicares dm ON d.doc_id = dm.doc_id
+        LEFT JOIN medicares m ON dm.os_id = m.os_id
+        LEFT JOIN doctor_availability da ON d.doc_id = da.doc_id
+        GROUP BY d.doc_id, d.doc_matricula, d.doc_type, u.usr_name, e.esp_name
+    ''')
+    doctors = cursor.fetchall()
+    
+    # Formatear datos si es necesario
+    for doctor in doctors:
+        doctor['medicares'] = doctor['medicares'].split(',') if doctor['medicares'] else []
+
+    return jsonify(doctors)
+
+@app.route('/patients/options', methods=['GET'])
+def get_patients_options():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT 
+            p.pac_id, 
+            u.usr_name AS patient_name,
+            d.dia_descripcion AS diagnosis,
+            CONCAT(t.tur_dia, ' a las ', TIME_FORMAT(t.tur_hora, '%H:%i:%s')) AS turn,
+            m.os_name AS medicare
+        FROM patients p
+        LEFT JOIN users u ON p.usr_id = u.usr_id
+        LEFT JOIN diagnistics d ON p.dia_id = d.dia_id
+        LEFT JOIN turns t ON p.tur_id = t.tur_id
+        LEFT JOIN medicares m ON p.os_id = m.os_id
+    ''')
+    patients = cursor.fetchall()
+
+    # Formatear datos para una representación más clara si es necesario
+    for patient in patients:
+        patient['description'] = f"{patient['patient_name']} - {patient['diagnosis']} - {patient['turn']} ({patient['medicare']})"
+
+    return jsonify(patients)
+
+
+@app.route('/states/options', methods=['GET'])
+def get_states_options():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT 
+            est_id, 
+            est_nombre 
+        FROM states
+    ''')
+    states = cursor.fetchall()
+
+    # Formatear los datos para una representación más clara si es necesario
+    for state in states:
+        state['description'] = state['est_nombre']
+
+    return jsonify(states)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

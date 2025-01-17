@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CALENDARIOS TURNOS MEDICOS</title>
+  <title>CALENDARIOS TURNOS MÉDICOS</title>
 
   <!-- FullCalendar -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
@@ -20,22 +20,26 @@
     <div id="calendar"></div>
   </div>
 
-  <!-- Popup for event creation -->
+  <!-- Popup para crear un turno -->
   <div class="popup-overlay"></div>
   <div class="popup" id="event-popup">
     <h3>Crear nuevo turno</h3>
 
-    <input type="text" id="popup-doc_id" placeholder="Ingrese id doctor">
-    <input type="text" id="popup-est_id" placeholder="Ingrese estado del turno">
-    <input type="text" id="popup-patient" placeholder="Ingrese el ID del paciente">
-    <input type="date" id="popup-tur_dia">
-    <input type="time" id="popup-time">    
+    <div>
+      <label for="popup-doc_id">Doctor:</label>
+      <select id="popup-doc_id" name="doc_id" required>
+        <option value="" disabled selected>Seleccione un doctor</option>
+      </select>
+    </div>
+    <input type="text" id="popup-est_id" placeholder="Estado del turno" required>
+    <input type="text" id="popup-patient" placeholder="ID del paciente" required>
+    <input type="date" id="popup-tur_dia" required>
+    <input type="time" id="popup-time" required>
     <button id="popup-submit">Crear Turno</button>
-    <button id="popup-cancel" style="display: none;">Cancelar Turno</button>
-
+    <button id="popup-cancel">Cancelar</button>
   </div>
 
-<script src="/front/static/js/calendario.js"></script>
+  <script src="/front/static/js/calendario.js"></script>
 </body>
 
 </html>
