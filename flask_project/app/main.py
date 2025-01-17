@@ -384,6 +384,87 @@ def delete_medicares(os_id):
     mysql.connection.commit()
     return jsonify({'message': 'medicares deleted successfully'})  
 
+# CRUD realizado por Jose
+# Ruta para obtener los receptionists
+@app.route('/receptionists', methods=['GET'])
+def get_receptionists():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM receptionists')
+    receptionists = cursor.fetchall()
+    return jsonify(receptionists)
+
+# Ruta para crear un nuevo receptionist
+@app.route('/receptionists', methods=['POST'])
+def create_receptionist():
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('INSERT INTO receptionists (rec_turn, usr_id) VALUES (%s, %s)', 
+                   (data['rec_turn'], data['usr_id']))
+    mysql.connection.commit()
+    return jsonify({'message': 'Receptionist created successfully'}), 201
+
+# Ruta para actualizar un receptionist
+@app.route('/receptionists/<int:rec_id>', methods=['PUT'])
+def update_receptionist(rec_id):
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('UPDATE receptionists SET rec_turn = %s, usr_id = %s WHERE rec_id = %s', 
+                   (data['rec_turn'], data['usr_id'], rec_id))
+    mysql.connection.commit()
+    return jsonify({'message': 'Receptionist updated successfully'})
+
+# Ruta para eliminar un receptionist
+@app.route('/receptionists/<int:rec_id>', methods=['DELETE'])
+def delete_receptionist(rec_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('DELETE FROM receptionists WHERE rec_id = %s', (rec_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'Receptionist deleted successfully'})
+
+
+
+# CRUD realizado por Jose
+# Ruta para obtener los diagnósticos (diagnistics)
+@app.route('/diagnistics', methods=['GET'])
+def get_diagnistics():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM diagnistics')
+    diagnistics = cursor.fetchall()
+    return jsonify(diagnistics)
+
+# Ruta para crear un nuevo diagnóstico (diagnistic)
+@app.route('/diagnistics', methods=['POST'])
+def create_diagnistic():
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        INSERT INTO diagnistics (dia_descripcion, pac_id) 
+        VALUES (%s, %s)
+    ''', (data['dia_descripcion'], data['pac_id']))
+    mysql.connection.commit()
+    return jsonify({'message': 'Diagnistic created successfully'}), 201
+
+# Ruta para actualizar un diagnóstico (diagnistic)
+@app.route('/diagnistics/<int:dia_id>', methods=['PUT'])
+def update_diagnistic(dia_id):
+    data = request.get_json()
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        UPDATE diagnistics 
+        SET dia_descripcion = %s, pac_id = %s 
+        WHERE dia_id = %s
+    ''', (data['dia_descripcion'], data['pac_id'], dia_id))
+    mysql.connection.commit()
+    return jsonify({'message': 'Diagnistic updated successfully'})
+
+# Ruta para eliminar un diagnóstico (diagnistic)
+@app.route('/diagnistics/<int:dia_id>', methods=['DELETE'])
+def delete_diagnistic(dia_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('DELETE FROM diagnistics WHERE dia_id = %s', (dia_id,))
+    mysql.connection.commit()
+    return jsonify({'message': 'Diagnistic deleted successfully'})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
