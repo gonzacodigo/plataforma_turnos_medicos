@@ -465,6 +465,138 @@ def delete_diagnistic(dia_id):
     mysql.connection.commit()
     return jsonify({'message': 'Diagnistic deleted successfully'})
 
+# DISPONIBILIDAD DEL MEDICO
+
+
+@app.route('/availability', methods=['GET'])
+def get_availability():
+    doc_id = request.args.get('doc_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not (doc_id and start_date and end_date):
+        return jsonify({'error': 'Faltan parámetros'}), 400
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    query = """
+        SELECT date, start_time, end_time, status
+        FROM doctor_availability
+        WHERE doc_id = %s AND date BETWEEN %s AND %s
+    """
+    cursor.execute(query, (doc_id, start_date, end_date))
+    availability = cursor.fetchall()
+    return jsonify(availability)
+
+# VALIDACION DE TURNO DISPONIBLE: @app.route('/validate-turn', methods=['POST'])
+
+
+def validate_turn():
+    data = request.get_json()
+    doc_id = data.get('doc_id')
+    tur_dia = data.get('tur_dia')
+    tur_hora = data.get('tur_hora')
+
+    if not (doc_id and tur_dia and tur_hora):
+        return jsonify({'error': 'Datos incompletos'}), 400
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    query = """
+        SELECT status
+        FROM doctor_availability
+        WHERE doc_id = %s AND date = %s AND %s BETWEEN start_time AND end_time
+    """
+    cursor.execute(query, (doc_id, tur_dia, tur_hora))
+    availability = cursor.fetchone()
+
+    if availability and availability['status'] != 'available':
+        return jsonify({'error': 'El horario no está disponible'}), 403
+
+    query = """
+        SELECT COUNT(*) AS count
+        FROM turns
+        WHERE doc_id = %s AND tur_dia = %s AND tur_hora = %s
+    """
+    cursor.execute(query, (doc_id, tur_dia, tur_hora))
+    turns = cursor.fetchone()
+
+    if turns['count'] > 0:
+        return jsonify({'error': 'El horario ya está ocupado'}), 403
+
+    return jsonify({'message': 'El horario está disponible'}), 200
+
+# MOSTRAR TURNOS YA RESERVADOS:
+
+
+@app.route('/reserved-turns', methods=['GET'])
+def reserved_turns():
+    doc_id = request.args.get('doc_id')
+    tur_dia = request.args.get('tur_dia')
+
+    if not (doc_id and tur_dia):
+        return jsonify({'error': 'Faltan parámetros'}), 400
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    query = """
+        SELECT tur_hora
+        FROM turns
+        WHERE doc_id = %s AND tur_dia = %s
+    """
+    cursor.execute(query, (doc_id, tur_dia))
+    reserved_turns = cursor.fetchall()
+    return jsonify(reserved_turns)
+
+
+# BLOQUEO PARA DIAS FESTIVOS
+@app.route('/doctor_availability', methods=['POST'])
+def create_doctor_availability():
+    data = request.get_json()
+    
+    # Validación de datos
+    if not all(key in data for key in ('id', 'doc_id', 'start_time', 'end_time', 'status')):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        # Verificar duplicados (si id es clave única)
+        cursor.execute('SELECT COUNT(*) FROM doctor_availability WHERE id = %s', (data['id'],))
+        if cursor.fetchone()[0] > 0:
+            return jsonify({'error': 'ID already exists'}), 409
+
+        # Insertar en la base de datos
+        cursor.execute(
+            'INSERT INTO doctor_availability (id, doc_id, start_time, end_time, status) VALUES (%s, %s, %s, %s, %s)',
+            (data['id'], data['doc_id'], data['start_time'], data['end_time'], data['status'])
+        )
+        mysql.connection.commit()
+        
+        return jsonify({'message': 'Doctor availability created successfully'}), 201
+    except Exception as e:
+        mysql.connection.rollback()  # Deshacer cambios en caso de error
+        return jsonify({'error': 'Failed to create doctor availability', 'details': str(e)}), 500
+
+@app.route('/doctor_availability/<int:id>', methods=['DELETE'])
+def delete_doctor_availability(id):
+    try:
+        cursor = mysql.connection.cursor()
+        # Verificar si el registro existe antes de eliminarlo
+        cursor.execute('SELECT * FROM doctor_availability WHERE id = %s', (id,))
+        record = cursor.fetchone()
+        
+        if not record:
+            return jsonify({'error': 'Record not found'}), 404
+
+        # Eliminar el registro si existe
+        cursor.execute('DELETE FROM doctor_availability WHERE id = %s', (id,))
+        mysql.connection.commit()
+        
+        return jsonify({'message': 'Record deleted successfully'}), 200
+    except Exception as e:
+        # Manejo de errores
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
