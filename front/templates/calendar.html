@@ -24,12 +24,15 @@
   <div class="popup-overlay"></div>
   <div class="popup" id="event-popup">
     <h3>Crear nuevo turno</h3>
-
+    
+ <!-- selector de Doctores -->
     <div>
       <label for="popup-doc_id">Doctor:</label>
+
       <select id="popup-doc_id" name="doc_id" required>
         <option value="" disabled selected>Seleccione un doctor</option>
       </select>
+
     </div>
     <input type="text" id="popup-est_id" placeholder="Estado del turno" required>
     <input type="text" id="popup-patient" placeholder="ID del paciente" required>
