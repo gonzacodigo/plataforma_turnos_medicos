@@ -780,26 +780,26 @@ def get_doctors_options():
         SELECT 
             d.doc_id,
             d.doc_matricula,
-            d.doc_type,
             u.usr_name AS doctor_name,
             e.esp_name AS speciality,
             GROUP_CONCAT(DISTINCT m.os_name) AS medicares,
-            CONCAT(da.date, ' (', TIME_FORMAT(da.start_time, '%H:%i'), ' - ', TIME_FORMAT(da.end_time, '%H:%i'), ')') AS availability
+            CONCAT(da.start_date, ' (', TIME_FORMAT(da.start_time, '%H:%i'), ' - ', TIME_FORMAT(da.end_time, '%H:%i'), ')') AS availability
         FROM doctors d
         LEFT JOIN users u ON d.usr_id = u.usr_id
         LEFT JOIN specialities e ON d.esp_id = e.esp_id
         LEFT JOIN doctors_medicares dm ON d.doc_id = dm.doc_id
         LEFT JOIN medicares m ON dm.os_id = m.os_id
         LEFT JOIN doctor_availability da ON d.doc_id = da.doc_id
-        GROUP BY d.doc_id, d.doc_matricula, d.doc_type, u.usr_name, e.esp_name
+        GROUP BY d.doc_id, d.doc_matricula, u.usr_name, e.esp_name
     ''')
     doctors = cursor.fetchall()
-    
+
     # Formatear datos si es necesario
     for doctor in doctors:
         doctor['medicares'] = doctor['medicares'].split(',') if doctor['medicares'] else []
 
     return jsonify(doctors)
+
 
 @app.route('/patients/options', methods=['GET'])
 def get_patients_options():
