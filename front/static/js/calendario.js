@@ -1,9 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // Referencias a elementos del DOM
   const calendarEl = document.getElementById("calendar");
   const popup = document.getElementById("event-popup");
   const overlay = document.querySelector(".popup-overlay");
 
   const popupDocId = document.getElementById("popup-doc_id");
+
   const popupEstId = document.getElementById("popup-est_id");
   const popupTurDia = document.getElementById("popup-tur_dia");
   const popupTime = document.getElementById("popup-time");
@@ -11,9 +13,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const popupSubmit = document.getElementById("popup-submit");
   const popupCancel = document.getElementById("popup-cancel");
 
-  const blockedDates = [];
+  const blockedDates = []; // Almacena días bloqueados
 
-  // Mostrar el popup
+  // Mostrar el popup para crear un turno
   function showPopup(date) {
     popupTurDia.value = date;
     popup.style.display = "block";
@@ -27,14 +29,14 @@ document.addEventListener("DOMContentLoaded", function () {
     popupDocId.value = "";
     popupEstId.value = "";
     popupTurDia.value = "";
-    popupTime.value = "";
+    popupTime.innerHTML = ""; // Limpiar horarios disponibles
     popupPatient.value = "";
   }
 
   overlay.addEventListener("click", hidePopup);
   popupCancel.addEventListener("click", hidePopup);
 
-  // Cargar doctores
+  // Cargar doctores en el selector
   async function loadDoctors() {
     try {
       const response = await fetch("http://127.0.0.1:5000/doctors/options");
@@ -50,11 +52,11 @@ document.addEventListener("DOMContentLoaded", function () {
         throw new Error("Error al cargar los doctores");
       }
     } catch (err) {
-      console.error(err.message);
+      console.error("Error al cargar doctores:", err.message);
     }
   }
 
-  // Crear un turno
+  // Crear un turno y enviarlo al backend
   async function createAppointment() {
     const turDia = popupTurDia.value.trim();
     const turHora = popupTime.value.trim();
@@ -88,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
           throw new Error(error.error || "Error al crear el turno");
         }
       } catch (err) {
-        console.error(err.message);
+        console.error("Error al crear el turno:", err.message);
         alert(`Error: ${err.message}`);
       }
     } else {
@@ -98,23 +100,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   popupSubmit.addEventListener("click", createAppointment);
 
-  // Procesar días bloqueados
+  // Cargar días bloqueados desde el backend
   async function loadBlockedDates() {
     try {
       const response = await fetch("http://127.0.0.1:5000/doctor_availability");
       if (response.ok) {
         const data = await response.json();
         data.forEach((item) => {
-          if (item.end) {
-            let startDate = new Date(item.start);
-            const endDate = new Date(item.end);
-            while (startDate <= endDate) {
-              blockedDates.push(startDate.toISOString().split("T")[0]);
-              startDate.setDate(startDate.getDate() + 1);
-            }
-          } else {
-            blockedDates.push(item.start);
-          }
+          blockedDates.push({
+            start: item.start,
+            end: item.end,
+            overlap: false,
+            rendering: "background",
+            color: "#ff9f89",
+          });
         });
       }
     } catch (err) {
@@ -122,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Inicializar calendario
+  // Configurar FullCalendar
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     headerToolbar: {
@@ -132,22 +131,86 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     events: "http://127.0.0.1:5000/turns",
     selectable: true,
-    dateClick: (info) => {
-      if (blockedDates.includes(info.dateStr)) {
-        alert("Este día está bloqueado.");
+    select: (info) => {
+      const isBlocked = blockedDates.some((block) => {
+        return (
+          new Date(block.start) <= new Date(info.start) &&
+          new Date(block.end) >= new Date(info.end)
+        );
+      });
+      if (isBlocked) {
+        alert("Este rango está bloqueado.");
         return;
       }
-      showPopup(info.dateStr);
+      showPopup(info.startStr);
     },
-    dayCellDidMount: (info) => {
-      if (blockedDates.includes(info.date.toISOString().split("T")[0])) {
-        info.el.style.backgroundColor = "#f8d7da";
-        info.el.style.cursor = "not-allowed";
-      }
-    },
+    eventSources: [
+      {
+        events: blockedDates,
+      },
+    ],
   });
 
-  // Cargar datos y renderizar
+  async function loadAvailableSlots(docId, date) {
+    const popupTime = document.getElementById("popup-time");
+    popupTime.innerHTML = ""; // Limpiar opciones previas
+  
+    if (!docId || !date) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Seleccione un doctor y una fecha primero";
+      popupTime.appendChild(option);
+      return;
+    }
+  
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/available_slots?doc_id=${docId}&date=${date}`
+      );
+  
+      if (response.ok) {
+        const slots = await response.json();
+  
+        if (slots.length === 0) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "No hay horarios disponibles";
+          popupTime.appendChild(option);
+          return;
+        }
+  
+        // Agregar horarios disponibles al selector
+        slots.forEach((slot) => {
+          const option = document.createElement("option");
+          option.value = slot;
+          option.textContent = slot;
+          popupTime.appendChild(option);
+        });
+      } else {
+        console.error("Error al cargar horarios:", await response.text());
+        alert("No se pudieron cargar los horarios disponibles.");
+      }
+    } catch (err) {
+      console.error("Error al cargar horarios:", err);
+    }
+  }
+  
+  // Escuchar cambios en el doctor y la fecha seleccionados
+
+  
+  popupDocId.addEventListener("change", () => {
+    const docId = popupDocId.value;
+    const date = popupTurDia.value;
+    loadAvailableSlots(docId, date);
+  });
+  
+  popupTurDia.addEventListener("change", () => {
+    const docId = popupDocId.value;
+    const date = popupTurDia.value;
+    loadAvailableSlots(docId, date);
+  });
+  
+  // Cargar datos iniciales y renderizar el calendario
   loadDoctors();
   loadBlockedDates().then(() => calendar.render());
 });

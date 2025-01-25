@@ -12,7 +12,7 @@
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/front/static/css/estilo_calendario.css">
+  <link rel="stylesheet" href="/plataforma_turnos_medicos/front/static/css/estilo_calendario.css">
 </head>
 
 <body>
@@ -37,12 +37,18 @@
     <input type="text" id="popup-est_id" placeholder="Estado del turno" required>
     <input type="text" id="popup-patient" placeholder="ID del paciente" required>
     <input type="date" id="popup-tur_dia" required>
-    <input type="time" id="popup-time" required>
+    <div>
+      <label for="popup-time">Horario disponible:</label>
+      <select id="popup-time" name="time" required>
+        <option value="" disabled selected>Seleccione un horario</option>
+      </select>
+    </div>
+    
     <button id="popup-submit">Crear Turno</button>
     <button id="popup-cancel">Cancelar</button>
   </div>
 
-  <script src="/front/static/js/calendario.js"></script>
+  <script src="/plataforma_turnos_medicos/front/static/js/calendario.js"></script>
 </body>
 
 </html>
