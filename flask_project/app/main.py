@@ -12,7 +12,8 @@ CORS(app)
 
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = 'localhost'  # Dirección del servidor MySQL
-app.config['MYSQL_USER'] = 'root'      # Nombre de usuario para la base de datos
+# Nombre de usuario para la base de datos
+app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''      # Contraseña para la base de datos
 app.config['MYSQL_DB'] = 'clinica'     # Nombre de la base de datos
 
@@ -23,15 +24,18 @@ mysql = MySQL(app)
 # Rutas para el CRUD de la tabla "types"
 # ================================
 
+
 @app.route('/types', methods=['GET'])
 def get_types():
     """
     Recuperar todos los registros de la tabla "types".
     """
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)  # Crear cursor para devolver resultados como diccionario
+    cursor = mysql.connection.cursor(
+        MySQLdb.cursors.DictCursor)  # Crear cursor para devolver resultados como diccionario
     cursor.execute('SELECT * FROM types')  # Ejecutar consulta
     types = cursor.fetchall()  # Recuperar todos los resultados
     return jsonify(types)  # Devolver los registros en formato JSON
+
 
 @app.route('/types', methods=['POST'])
 def create_type():
@@ -43,7 +47,9 @@ def create_type():
     cursor.execute('INSERT INTO types (tip_name) VALUES (%s)',
                    (data['tip_name'],))  # Insertar nuevo registro
     mysql.connection.commit()  # Confirmar cambios en la base de datos
-    return jsonify({'message': 'Type created successfully'}), 201  # Responder con éxito
+    # Responder con éxito
+    return jsonify({'message': 'Type created successfully'}), 201
+
 
 @app.route('/types/<int:tip_id>', methods=['PUT'])
 def update_type(tip_id):
@@ -57,19 +63,22 @@ def update_type(tip_id):
     mysql.connection.commit()  # Confirmar cambios
     return jsonify({'message': 'Type updated successfully'})
 
+
 @app.route('/types/<int:tip_id>', methods=['DELETE'])
 def delete_type(tip_id):
     """
     Eliminar un registro específico de la tabla "types".
     """
     cursor = mysql.connection.cursor()
-    cursor.execute('DELETE FROM types WHERE tip_id = %s', (tip_id,))  # Eliminar registro
+    cursor.execute('DELETE FROM types WHERE tip_id = %s',
+                   (tip_id,))  # Eliminar registro
     mysql.connection.commit()  # Confirmar cambios
     return jsonify({'message': 'Type deleted successfully'})
 
 # ================================
 # Rutas para el CRUD de la tabla "users"
 # ================================
+
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -80,6 +89,7 @@ def get_users():
     cursor.execute('SELECT * FROM users')  # Consultar todos los usuarios
     users = cursor.fetchall()
     return jsonify(users)
+
 
 @app.route('/users', methods=['POST'])
 def create_user():
@@ -103,6 +113,7 @@ def create_user():
     mysql.connection.commit()
     return jsonify({'message': 'User created successfully'}), 201
 
+
 @app.route('/users/<int:usr_id>', methods=['PUT'])
 def update_user(usr_id):
     """
@@ -118,13 +129,15 @@ def update_user(usr_id):
     mysql.connection.commit()
     return jsonify({'message': 'User updated successfully'})
 
+
 @app.route('/users/<int:usr_id>', methods=['DELETE'])
 def delete_user(usr_id):
     """
     Eliminar un registro específico de la tabla "users".
     """
     cursor = mysql.connection.cursor()
-    cursor.execute('DELETE FROM users WHERE usr_id = %s', (usr_id,))  # Eliminar registro
+    cursor.execute('DELETE FROM users WHERE usr_id = %s',
+                   (usr_id,))  # Eliminar registro
     mysql.connection.commit()
     return jsonify({'message': 'User deleted successfully'})
 
@@ -138,10 +151,13 @@ def get_state():
     """
     Recuperar todos los registros de la tabla "states".
     """
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)  # Crear cursor para devolver resultados como diccionario
-    cursor.execute('SELECT * FROM states')  # Ejecutar consulta SQL para obtener los estados
+    cursor = mysql.connection.cursor(
+        MySQLdb.cursors.DictCursor)  # Crear cursor para devolver resultados como diccionario
+    # Ejecutar consulta SQL para obtener los estados
+    cursor.execute('SELECT * FROM states')
     states = cursor.fetchall()  # Obtener todos los resultados de la consulta
     return jsonify(states)  # Devolver los estados en formato JSON
+
 
 @app.route('/states', methods=['POST'])
 def create_state():
@@ -153,7 +169,9 @@ def create_state():
     cursor.execute('INSERT INTO states (est_nombre) VALUES (%s)',
                    (data['est_nombre'],))  # Insertar un nuevo estado en la tabla
     mysql.connection.commit()  # Confirmar los cambios en la base de datos
-    return jsonify({'message': 'State created successfully'}), 201  # Responder con un mensaje de éxito
+    # Responder con un mensaje de éxito
+    return jsonify({'message': 'State created successfully'}), 201
+
 
 @app.route('/states/<int:est_id>', methods=['PUT'])
 def update_state(est_id):
@@ -165,7 +183,9 @@ def update_state(est_id):
     cursor.execute('UPDATE states SET est_nombre = %s WHERE est_id = %s',
                    (data['est_nombre'], est_id))  # Actualizar el nombre del estado especificado
     mysql.connection.commit()  # Confirmar los cambios en la base de datos
-    return jsonify({'message': 'State updated successfully'})  # Responder con un mensaje de éxito
+    # Responder con un mensaje de éxito
+    return jsonify({'message': 'State updated successfully'})
+
 
 @app.route('/states/<int:est_id>', methods=['DELETE'])
 def delete_state(est_id):
@@ -173,9 +193,11 @@ def delete_state(est_id):
     Eliminar un registro específico de la tabla "states".
     """
     cursor = mysql.connection.cursor()  # Crear cursor para ejecutar la consulta
-    cursor.execute('DELETE FROM states WHERE est_id = %s', (est_id,))  # Eliminar el estado especificado
+    cursor.execute('DELETE FROM states WHERE est_id = %s',
+                   (est_id,))  # Eliminar el estado especificado
     mysql.connection.commit()  # Confirmar los cambios en la base de datos
-    return jsonify({'message': 'State deleted successfully'})  # Responder con un mensaje de éxito
+    # Responder con un mensaje de éxito
+    return jsonify({'message': 'State deleted successfully'})
 
 
 @app.route('/patients', methods=['GET'])
@@ -218,7 +240,6 @@ def create_patients():
     mysql.connection.commit()
 
     return jsonify({'message': 'Paciente registrado correctamente'}), 201
-
 
 
 @app.route('/patients/<int:pac_id>', methods=['DELETE'])
@@ -630,36 +651,12 @@ def delete_diagnistic(dia_id):
     return jsonify({'message': 'Diagnistic deleted successfully'})
 
 
-@app.route('/turns', methods=['GET'])
-def get_turns():
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute("""
-        SELECT 
-            tur_dia, 
-            TIME_FORMAT(tur_hora, '%H:%i:%s') AS tur_hora, 
-            doc_id, 
-            pac_id, 
-            est_id 
-        FROM turns
-    """)
-    turns = cursor.fetchall()
-
-    # Formatear los datos para FullCalendar
-    events = [
-        {
-            "title": f"Turno de paciente {turn['pac_id']}",
-            "start": f"{turn['tur_dia']}T{turn['tur_hora']}",
-            "end": f"{turn['tur_dia']}T{turn['tur_hora']}",
-        }
-        for turn in turns
-    ]
-    return jsonify(events)
-
 @app.route('/available_slots', methods=['GET'])
 def get_available_slots():
     # Obtener los parámetros enviados en la solicitud (ID del doctor y fecha seleccionada)
     doctor_id = request.args.get('doc_id')  # ID del doctor
-    selected_date = request.args.get('date')  # Fecha seleccionada en formato 'YYYY-MM-DD'
+    # Fecha seleccionada en formato 'YYYY-MM-DD'
+    selected_date = request.args.get('date')
 
     # Validación: verificar que ambos parámetros son proporcionados
     if not doctor_id or not selected_date:
@@ -678,7 +675,8 @@ def get_available_slots():
             WHERE doc_id = %s 
               AND DATE(date) = %s  -- Verificar que la fecha coincida exactamente
         """
-        cursor.execute(query_availability, (doctor_id, selected_date))  # Parámetros: ID del doctor y la fecha seleccionada
+        cursor.execute(query_availability, (doctor_id, selected_date)
+                       )  # Parámetros: ID del doctor y la fecha seleccionada
 
         # Recuperar los rangos de disponibilidad del doctor (inicio y fin)
         availabilities = cursor.fetchall()
@@ -694,7 +692,8 @@ def get_available_slots():
             FROM turns
             WHERE doc_id = %s AND tur_dia = %s
         """
-        cursor.execute(query_occupied, (doctor_id, selected_date))  # Parámetros: ID del doctor y la fecha seleccionada
+        cursor.execute(query_occupied, (doctor_id, selected_date)
+                       )  # Parámetros: ID del doctor y la fecha seleccionada
 
         # Crear un conjunto de horarios ocupados para una búsqueda eficiente
         occupied_slots = {row['tur_hora'] for row in cursor.fetchall()}
@@ -705,7 +704,8 @@ def get_available_slots():
             # Convertir los horarios de inicio y fin a objetos datetime para manipulación
             start_time = datetime.strptime(availability['start_time'], '%H:%M')
             end_time = datetime.strptime(availability['end_time'], '%H:%M')
-            ranges.append((start_time, end_time))  # Agregar el rango a la lista
+            # Agregar el rango a la lista
+            ranges.append((start_time, end_time))
 
         # 4. Generar franjas horarias de 30 minutos excluyendo las ocupadas
         slots = []  # Lista para almacenar las franjas horarias disponibles
@@ -713,7 +713,8 @@ def get_available_slots():
             while start < end:  # Dividir el rango en intervalos de 30 minutos
                 slot = start.strftime('%H:%M')  # Formatear la hora como cadena
                 if slot not in occupied_slots:  # Excluir horarios ya ocupados
-                    slots.append(slot)  # Agregar el horario disponible a la lista
+                    # Agregar el horario disponible a la lista
+                    slots.append(slot)
                 start += timedelta(minutes=60)  # Avanzar 30 minutos
 
         # Devolver la lista de horarios disponibles en formato JSON
@@ -728,44 +729,38 @@ def get_available_slots():
         cursor.close()
 
 
+@app.route('/update_availability_status', methods=['POST'])
+def update_availability_status():
+    # Obtener datos del formulario
+    availability_id = request.form['id']
+    new_status = request.form['status']
+
+    # Validar que el estado sea válido
+    if new_status not in ['available', 'blocked', 'tentative', 'unavailable']:
+        return jsonify({'error': 'Estado inválido'}), 400
+
+    # Actualizar el estado en la base de datos
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+        UPDATE doctor_availability
+        SET status = %s
+        WHERE id = %s
+    """, (new_status, availability_id))
+    mysql.connection.commit()
+
+    return jsonify({'message': 'Estado actualizado correctamente'})
 
 
-
-
-
-
-@app.route('/turns', methods=['POST'])
-def create_turns():
+@app.route('/doctor_availability', methods=['POST'])
+def update_availability():
     data = request.get_json()
-
-    try:
-        # Validar formato de fecha y hora
-        datetime.strptime(data['tur_dia'], '%Y-%m-%d')
-        datetime.strptime(data['tur_hora'], '%H:%M:%S')
-
-        # Verificar disponibilidad del doctor
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("""
-            SELECT * 
-            FROM doctor_availability
-            WHERE doc_id = %s AND status = 'available'
-            AND %s BETWEEN start_time AND end_time
-        """, (data['doc_id'], data['tur_hora']))
-        availability = cursor.fetchone()
-        if not availability:
-            return jsonify({'error': 'El horario no está disponible para el doctor seleccionado'}), 400
-
-    except (ValueError, KeyError) as e:
-        return jsonify({'error': 'Datos inválidos o faltantes', 'details': str(e)}), 400
-
+    cursor = mysql.connection.cursor()
     cursor.execute(
-        'INSERT INTO turns (tur_dia, tur_hora, doc_id, pac_id, est_id) VALUES (%s, %s, %s, %s, %s)',
-        (data['tur_dia'], data['tur_hora'], data['doc_id'], data['pac_id'], data['est_id'])
+        'INSERT INTO doctor_availability (doc_id, start_time, end_time, status) VALUES (%s, %s, %s, %s)',
+        (data['doc_id'], data['start_time'], data['end_time'], 'blocked')
     )
     mysql.connection.commit()
-    return jsonify({'message': 'Turno creado exitosamente'}), 201
-
-# Obtener días bloqueados (vacaciones/festivos) de los doctores
+    return jsonify({'message': 'Disponibilidad actualizada exitosamente'}), 201
 
 
 @app.route('/doctor_availability', methods=['GET'])
@@ -793,7 +788,6 @@ def get_blocked_days():
         for availability in doctor_availability
     ]
     return jsonify(events)
-
 
 
 # Crear un nuevo registro de disponibilidad del doctor
@@ -875,22 +869,6 @@ def get_diagnistics_options():
     return jsonify(diagnistics)
 
 
-@app.route('/turns/options', methods=['GET'])
-def get_turns_options():
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('''
-        SELECT 
-            tur_id, 
-            tur_dia, 
-            TIME_FORMAT(tur_hora, '%H:%i:%s') AS tur_hora
-        FROM turns
-    ''')
-    turns = cursor.fetchall()
-    # Crear una descripción legible combinando fecha y hora
-    for turn in turns:
-        turn['descripcion'] = f"{turn['tur_dia']} a las {turn['tur_hora']}"
-    return jsonify(turns)
-
 @app.route('/doctors/options', methods=['GET'])
 def get_doctors_options():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -914,7 +892,8 @@ def get_doctors_options():
 
     # Formatear datos si es necesario
     for doctor in doctors:
-        doctor['medicares'] = doctor['medicares'].split(',') if doctor['medicares'] else []
+        doctor['medicares'] = doctor['medicares'].split(
+            ',') if doctor['medicares'] else []
 
     return jsonify(doctors)
 
@@ -939,7 +918,8 @@ def get_patients_options():
 
     # Formatear datos para una representación más clara si es necesario
     for patient in patients:
-        patient['description'] = f"{patient['patient_name']} - {patient['diagnosis']} - {patient['turn']} ({patient['medicare']})"
+        patient[
+            'description'] = f"{patient['patient_name']} - {patient['diagnosis']} - {patient['turn']} ({patient['medicare']})"
 
     return jsonify(patients)
 
@@ -960,6 +940,145 @@ def get_states_options():
         state['description'] = state['est_nombre']
 
     return jsonify(states)
+
+
+
+
+@app.route('/turns', methods=['GET'])
+def get_turns():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("""
+        SELECT 
+            t.tur_id,
+            t.tur_dia, 
+            TIME_FORMAT(t.tur_hora, '%H:%i:%s') AS tur_hora, 
+            t.doc_id, 
+            t.pac_id, 
+            t.est_id, 
+            d.usr_name AS doctor_name,
+            p.usr_name AS patient_name,
+            s.est_nombre AS status_name
+        FROM turns t
+        LEFT JOIN users d ON t.doc_id = d.usr_id
+        LEFT JOIN users p ON t.pac_id = p.usr_id
+        LEFT JOIN states s ON t.est_id = s.est_id
+    """)
+    turns = cursor.fetchall()
+
+    events = [
+        {
+            "id": turn["tur_id"],
+            "title": f"Turno de paciente {turn['patient_name']}",
+            "start": f"{turn['tur_dia']}T{turn['tur_hora']}",
+            "end": f"{turn['tur_dia']}T{turn['tur_hora']}",
+            "extendedProps": {
+                "doc_id": turn["doc_id"],
+                "pac_id": turn["pac_id"],
+                "est_id": turn["est_id"],
+                "doctor_name": turn["doctor_name"],
+                "patient_name": turn["patient_name"],
+                "status": turn["status_name"]
+            }
+        }
+        for turn in turns
+    ]
+    return jsonify(events)
+
+
+@app.route('/turns/<int:turn_id>', methods=['GET'])
+def get_turn_details(turn_id):
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("""
+        SELECT 
+            t.tur_id,
+            t.tur_dia,
+            TIME_FORMAT(t.tur_hora, '%H:%i:%s') AS tur_hora,
+            t.doc_id,
+            t.pac_id,
+            t.est_id,
+            d.usr_name AS doctor_name,
+            p.usr_name AS patient_name,
+            s.est_nombre AS status_name
+        FROM turns t
+        LEFT JOIN users d ON t.doc_id = d.usr_id
+        LEFT JOIN users p ON t.pac_id = p.usr_id
+        LEFT JOIN states s ON t.est_id = s.est_id
+        WHERE t.tur_id = %s
+    """, (turn_id,))
+    turn = cursor.fetchone()
+
+    if not turn:
+        return jsonify({'error': 'Turno no encontrado'}), 404
+
+    return jsonify({
+        "id": turn["tur_id"],
+        "title": f"Turno de paciente {turn['patient_name']}",
+        "start": f"{turn['tur_dia']}T{turn['tur_hora']}",
+        "extendedProps": {
+            "doc_id": turn["doc_id"],
+            "pac_id": turn["pac_id"],
+            "est_id": turn["est_id"],
+            "doctor_name": turn["doctor_name"],
+            "patient_name": turn["patient_name"],
+            "status": turn["status_name"]
+        }
+    })
+
+
+@app.route('/turns', methods=['POST'])
+def create_turn():
+    data = request.get_json()
+
+    try:
+        datetime.strptime(data['tur_dia'], '%Y-%m-%d')
+        datetime.strptime(data['tur_hora'], '%H:%M:%S')
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            INSERT INTO turns (tur_dia, tur_hora, doc_id, pac_id, est_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (data['tur_dia'], data['tur_hora'], data['doc_id'], data['pac_id'], data['est_id']))
+        mysql.connection.commit()
+
+        return jsonify({'message': 'Turno creado exitosamente'}), 201
+
+    except Exception as e:
+        return jsonify({'error': 'Datos inválidos', 'details': str(e)}), 400
+
+
+@app.route('/turns/<int:turn_id>', methods=['PUT'])
+def update_turn(turn_id):
+    data = request.get_json()
+
+    try:
+        datetime.strptime(data['tur_dia'], '%Y-%m-%d')
+        datetime.strptime(data['tur_hora'], '%H:%M:%S')
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            UPDATE turns
+            SET tur_dia = %s, tur_hora = %s, doc_id = %s, pac_id = %s, est_id = %s
+            WHERE tur_id = %s
+        """, (data['tur_dia'], data['tur_hora'], data['doc_id'], data['pac_id'], data['est_id'], turn_id))
+        mysql.connection.commit()
+
+        return jsonify({'message': 'Turno actualizado exitosamente'})
+
+    except Exception as e:
+        return jsonify({'error': 'Datos inválidos', 'details': str(e)}), 400
+
+
+@app.route('/turns/<int:turn_id>', methods=['DELETE'])
+def delete_turn(turn_id):
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute("DELETE FROM turns WHERE tur_id = %s", (turn_id,))
+        mysql.connection.commit()
+
+        return jsonify({'message': 'Turno eliminado exitosamente'})
+
+    except Exception as e:
+        return jsonify({'error': 'Error al eliminar el turno', 'details': str(e)}), 400
 
 
 if __name__ == '__main__':
