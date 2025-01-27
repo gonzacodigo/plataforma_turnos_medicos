@@ -949,22 +949,27 @@ def get_turns():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("""
         SELECT 
-            t.tur_id,
+            t.tur_id, 
             t.tur_dia, 
             TIME_FORMAT(t.tur_hora, '%H:%i:%s') AS tur_hora, 
             t.doc_id, 
             t.pac_id, 
             t.est_id, 
-            d.usr_name AS doctor_name,
-            p.usr_name AS patient_name,
-            s.est_nombre AS status_name
+            d.usr_name AS doctor_name,  -- Nombre del doctor
+            p.usr_name AS patient_name, -- Nombre del paciente
+            s.est_nombre AS status_name -- Estado del turno
         FROM turns t
+        -- JOIN para obtener el nombre del doctor
         LEFT JOIN users d ON t.doc_id = d.usr_id
+        -- JOIN para obtener el nombre del paciente
         LEFT JOIN users p ON t.pac_id = p.usr_id
+        -- JOIN para obtener el estado del turno
         LEFT JOIN states s ON t.est_id = s.est_id
+        WHERE t.doc_id IS NOT NULL AND t.pac_id IS NOT NULL
     """)
     turns = cursor.fetchall()
 
+    # Formatear los datos para FullCalendar
     events = [
         {
             "id": turn["tur_id"],
@@ -973,16 +978,18 @@ def get_turns():
             "end": f"{turn['tur_dia']}T{turn['tur_hora']}",
             "extendedProps": {
                 "doc_id": turn["doc_id"],
-                "pac_id": turn["pac_id"],
-                "est_id": turn["est_id"],
                 "doctor_name": turn["doctor_name"],
+                "pac_id": turn["pac_id"],
                 "patient_name": turn["patient_name"],
+                "est_id": turn["est_id"],
                 "status": turn["status_name"]
             }
         }
         for turn in turns
     ]
     return jsonify(events)
+
+
 
 
 @app.route('/turns/<int:turn_id>', methods=['GET'])

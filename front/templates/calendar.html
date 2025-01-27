@@ -12,6 +12,8 @@
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.0.3/luxon.min.js"></script>
+
   <link rel="stylesheet" href="/plataforma_turnos_medicos/front/static/css/estilo_calendario.css">
 </head>
 
@@ -20,35 +22,67 @@
     <div id="calendar"></div>
   </div>
 
-  <!-- Popup para crear un turno -->
+  <!-- Popup para crear o editar un turno -->
   <div class="popup-overlay"></div>
   <div class="popup" id="event-popup">
-    <h3>Crear nuevo turno</h3>
-    
- <!-- selector de Doctores -->
+    <h3 id="popup-title">Crear o Editar Turno</h3>
+
+    <!-- Selector de Doctores -->
     <div>
       <label for="popup-doc_id">Doctor:</label>
-
       <select id="popup-doc_id" name="doc_id" required>
         <option value="" disabled selected>Seleccione un doctor</option>
       </select>
-
     </div>
-    <input type="text" id="popup-est_id" placeholder="Estado del turno" required>
-    <input type="text" id="popup-patient" placeholder="ID del paciente" required>
-    <input type="date" id="popup-tur_dia" required>
+
+    <!-- Campos para los datos del turno -->
+    <div>
+      <label for="popup-patient">Paciente:</label>
+      <select id="popup-patient" name="pac_id" required>
+        <option value="" disabled selected>Seleccione un paciente</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="popup-est_id">Estado:</label>
+      <select id="popup-est_id" name="est_id" required>
+        <option value="" disabled selected>Seleccione un estado</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="popup-tur_dia">Fecha:</label>
+      <input type="date" id="popup-tur_dia" required>
+    </div>
+
     <div>
       <label for="popup-time">Horario disponible:</label>
-      <select id="popup-time" name="time" required>
+      <select id="popup-time" name="tur_hora" required>
         <option value="" disabled selected>Seleccione un horario</option>
       </select>
     </div>
-    
-    <button id="popup-submit">Crear Turno</button>
+
+    <!-- Botones de acción -->
+    <button id="popup-submit">Guardar Turno</button>
     <button id="popup-cancel">Cancelar</button>
+  </div>
+
+  <!-- Popup para ver detalles del turno -->
+  <div class="popup" id="details-popup" style="display: none;">
+    <h3>Detalles del Turno</h3>
+    <p><strong>Doctor:</strong> <span id="details-doc"></span></p>
+    <p><strong>Paciente:</strong> <span id="details-patient"></span></p>
+    <p><strong>Fecha:</strong> <span id="details-date"></span></p>
+    <p><strong>Hora:</strong> <span id="details-time"></span></p>
+    <p><strong>Estado:</strong> <span id="details-status"></span></p>
+
+    <button id="details-edit">Editar Turno</button>
+    <button id="details-cancel">Cancelar Turno</button>
+    <button id="details-close">Cerrar</button>
   </div>
 
   <script src="/plataforma_turnos_medicos/front/static/js/calendario.js"></script>
 </body>
 
 </html>
+
