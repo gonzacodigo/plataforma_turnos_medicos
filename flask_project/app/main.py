@@ -12,18 +12,31 @@ CORS(app)
 
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = 'localhost'  # Dirección del servidor MySQL
-# Nombre de usuario para la base de datos
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''      # Contraseña para la base de datos
-app.config['MYSQL_DB'] = 'clinica'     # Nombre de la base de datos
+app.config['MYSQL_USER'] = 'root'       # Usuario de la base de datos
+app.config['MYSQL_PASSWORD'] = ''       # Contraseña del usuario
+app.config['MYSQL_DB'] = 'clinica'      # Nombre de la base de datos
 
 # Inicializar la conexión con MySQL
 mysql = MySQL(app)
 
-# ================================
-# Rutas para el CRUD de la tabla "types"
-# ================================
+#rutas para el login
+@app.route('/validar', methods=['POST'])
+def validar_user():   
+    if request.method == 'POST':
+        data = request.json  # Recibe datos en formato JSON
+        email = data.get('email')
+        password = data.get('password')
 
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM users WHERE usr_email = %s AND usr_password = %s", (email, password))
+        user = cur.fetchone()
+        cur.close()
+        
+        if user:
+        #  print(user)
+         return jsonify({"message": "Login exitoso", "user": user}), 200
+        else:
+         return jsonify({"message": "Usuario o contraseña incorrectos"}), 401
 
 @app.route('/types', methods=['GET'])
 def get_types():
@@ -90,6 +103,25 @@ def get_users():
     users = cursor.fetchall()
     return jsonify(users)
 
+@app.route('/users/<int:usr_id>', methods=['GET'])
+def get_user(usr_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute('SELECT * FROM users WHERE usr_id = %s', (usr_id,))
+    user = cursor.fetchone()
+    
+    if user:
+        return jsonify({
+            'usr_user': user[1],
+            'usr_password': user[2],
+            'usr_name': user[3],
+            'usr_lastname': user[4],
+            'usr_dni': user[5],
+            'usr_email': user[6],
+            'usr_phone': user[7],
+            'tip_id': user[8]
+        })
+    else:
+        return jsonify({'error': 'User not found'}), 404
 
 @app.route('/users', methods=['POST'])
 def create_user():
@@ -208,38 +240,97 @@ def get_patients():
             p.pac_id, 
             u.usr_name, 
             u.usr_lastname, 
+            d.dia_descripcion AS diagnostico, 
+            (SELECT t.tur_dia FROM turns t WHERE t.pac_id = p.pac_id ORDER BY t.tur_dia DESC LIMIT 1) AS turn_day, 
+            (SELECT TIME_FORMAT(t.tur_hora, '%H:%i:%s') FROM turns t WHERE t.pac_id = p.pac_id ORDER BY t.tur_dia DESC LIMIT 1) AS turn_hour, 
+            os.os_name AS medicare
+        FROM patients p
+        LEFT JOIN users u ON p.usr_id = u.usr_id
+        LEFT JOIN diagnistics d ON p.dia_id = d.dia_id
+        LEFT JOIN medicares os ON p.os_id = os.os_id
+    ''')
+    
+    patients = cursor.fetchall()
+    return jsonify(patients)
+
+
+
+@app.route('/patients/<int:pac_id>', methods=['PUT'])
+def update_patient(pac_id):
+    data = request.get_json()
+
+    usr_id = data['usr_id']
+    dia_id = data['dia_id']
+    tur_id = data['tur_id']
+    os_id = data['os_id']
+
+    cursor = mysql.connection.cursor()
+    cursor.execute('''
+        UPDATE patients 
+        SET usr_id = %s, dia_id = %s, tur_id = %s, os_id = %s 
+        WHERE pac_id = %s
+    ''', (usr_id, dia_id, tur_id, os_id, pac_id))
+
+    mysql.connection.commit()
+    return jsonify({"message": "Paciente actualizado correctamente"})
+
+
+@app.route('/patients/<int:pac_id>', methods=['GET'])
+def get_patient(pac_id):
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT 
+            p.pac_id, 
+            u.usr_name, 
+            u.usr_lastname, 
             d.dia_descripcion,
             t.tur_dia, 
             t.tur_hora, 
-            os.os_name
+            os.os_name,
+            u.usr_email,
+            u.usr_phone
         FROM patients p
         JOIN users u ON p.usr_id = u.usr_id
         JOIN diagnistics d ON p.dia_id = d.dia_id
         JOIN turns t ON p.tur_id = t.tur_id
         JOIN medicares os ON p.os_id = os.os_id
-    ''')
-    patients = cursor.fetchall()
-    return jsonify(patients)
+        WHERE p.pac_id = %s
+    ''', (pac_id,))
+    
+    patient = cursor.fetchone()
+
+    if patient:
+        return jsonify(patient)
+    else:
+        return jsonify({'error': 'Patient not found'}), 404
 
 
 @app.route('/patients', methods=['POST'])
-def create_patients():
+def create_patient():
     data = request.get_json()
 
-    # Validar que todos los campos requeridos estén presentes
-    required_fields = ['dia_id', 'tur_id', 'usr_id', 'os_id']
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return jsonify({'error': f'Faltan los siguientes campos: {", ".join(missing_fields)}'}), 400
+    usr_id = data['usr_id']
+    dia_id = data['dia_id']
+    tur_id = data['tur_id']
+    os_id = data['os_id']
 
     cursor = mysql.connection.cursor()
-    cursor.execute('''
-        INSERT INTO patients (dia_id, tur_id, usr_id, os_id)
-        VALUES (%s, %s, %s, %s)
-    ''', (data['dia_id'], data['tur_id'], data['usr_id'], data['os_id']))
-    mysql.connection.commit()
 
-    return jsonify({'message': 'Paciente registrado correctamente'}), 201
+    # Verifica si el usr_id existe en la tabla users
+    cursor.execute('SELECT usr_id FROM users WHERE usr_id = %s', (usr_id,))
+    user = cursor.fetchone()
+    if not user:
+        return jsonify({"error": "El usuario no existe"}), 400
+
+    # Insertar el paciente si el usr_id es válido
+    cursor.execute('''
+        INSERT INTO patients (usr_id, dia_id, tur_id, os_id)
+        VALUES (%s, %s, %s, %s)
+    ''', (usr_id, dia_id, tur_id, os_id))
+
+    mysql.connection.commit()
+    return jsonify({"message": "Paciente registrado correctamente"}), 201
+
 
 
 @app.route('/patients/<int:pac_id>', methods=['DELETE'])
@@ -904,24 +995,13 @@ def get_patients_options():
     cursor.execute('''
         SELECT 
             p.pac_id, 
-            u.usr_name AS patient_name,
-            d.dia_descripcion AS diagnosis,
-            CONCAT(t.tur_dia, ' a las ', TIME_FORMAT(t.tur_hora, '%H:%i:%s')) AS turn,
-            m.os_name AS medicare
+            u.usr_name AS patient_name
         FROM patients p
-        LEFT JOIN users u ON p.usr_id = u.usr_id
-        LEFT JOIN diagnistics d ON p.dia_id = d.dia_id
-        LEFT JOIN turns t ON p.tur_id = t.tur_id
-        LEFT JOIN medicares m ON p.os_id = m.os_id
+        JOIN users u ON p.usr_id = u.usr_id
     ''')
     patients = cursor.fetchall()
-
-    # Formatear datos para una representación más clara si es necesario
-    for patient in patients:
-        patient[
-            'description'] = f"{patient['patient_name']} - {patient['diagnosis']} - {patient['turn']} ({patient['medicare']})"
-
     return jsonify(patients)
+
 
 
 @app.route('/states/options', methods=['GET'])
@@ -955,17 +1035,16 @@ def get_turns():
             t.doc_id, 
             t.pac_id, 
             t.est_id, 
-            d.usr_name AS doctor_name,  -- Nombre del doctor
-            p.usr_name AS patient_name, -- Nombre del paciente
-            s.est_nombre AS status_name -- Estado del turno
+            CONCAT(ud.usr_name, ' ', ud.usr_lastname) AS doctor_name,  
+            CONCAT(up.usr_name, ' ', up.usr_lastname) AS patient_name, 
+            s.est_nombre AS status_name
         FROM turns t
-        -- JOIN para obtener el nombre del doctor
-        LEFT JOIN users d ON t.doc_id = d.usr_id
-        -- JOIN para obtener el nombre del paciente
-        LEFT JOIN users p ON t.pac_id = p.usr_id
-        -- JOIN para obtener el estado del turno
+        JOIN doctors d ON t.doc_id = d.doc_id
+        JOIN users ud ON d.usr_id = ud.usr_id
+        JOIN patients p ON t.pac_id = p.pac_id
+        JOIN users up ON p.usr_id = up.usr_id
         LEFT JOIN states s ON t.est_id = s.est_id
-        WHERE t.doc_id IS NOT NULL AND t.pac_id IS NOT NULL
+        WHERE t.doc_id IS NOT NULL AND t.pac_id IS NOT NULL;
     """)
     turns = cursor.fetchall()
 
@@ -982,12 +1061,15 @@ def get_turns():
                 "pac_id": turn["pac_id"],
                 "patient_name": turn["patient_name"],
                 "est_id": turn["est_id"],
-                "status": turn["status_name"]
+                "status": turn["status_name"],
+                "tur_hora": turn["tur_hora"]  # Incluir la hora aquí
             }
         }
         for turn in turns
     ]
     return jsonify(events)
+
+
 
 
 
@@ -1032,25 +1114,63 @@ def get_turn_details(turn_id):
     })
 
 
+
+@app.route('/turns/options', methods=['GET'])
+def get_turns_options():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT 
+            t.tur_id, 
+            t.tur_dia, 
+            TIME_FORMAT(t.tur_hora, '%H:%i:%s') AS tur_hora, 
+            u.usr_name AS doctor_name, 
+            u.usr_lastname AS doctor_lastname
+        FROM turns t
+        JOIN doctors d ON t.doc_id = d.doc_id
+        JOIN users u ON d.usr_id = u.usr_id
+    ''')
+    turns = cursor.fetchall()
+
+    # Formatear la fecha y la descripción del turno
+    for turn in turns:
+        # Convertir la fecha al formato dd/mm/yyyy
+        turn['tur_dia'] = datetime.strptime(str(turn['tur_dia']), "%Y-%m-%d").strftime("%d/%m/%Y")
+        turn['description'] = f"Turno: {turn['tur_dia']} - {turn['tur_hora']} - Dr. {turn['doctor_name']} {turn['doctor_lastname']}"
+
+    return jsonify(turns)
+
+
+
 @app.route('/turns', methods=['POST'])
 def create_turn():
     data = request.get_json()
 
     try:
-        datetime.strptime(data['tur_dia'], '%Y-%m-%d')
-        datetime.strptime(data['tur_hora'], '%H:%M:%S')
+        # Extraer las propiedades extendidas
+        pac_id = data['pac_id']
+        doc_id = data['doc_id']
+        est_id = data['est_id']
 
+        # Validar que los IDs relacionados existan
         cursor = mysql.connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM patients WHERE pac_id = %s", (pac_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({'error': 'El pac_id no existe'}), 400
+
+        # Insertar el turno
         cursor.execute("""
             INSERT INTO turns (tur_dia, tur_hora, doc_id, pac_id, est_id)
             VALUES (%s, %s, %s, %s, %s)
-        """, (data['tur_dia'], data['tur_hora'], data['doc_id'], data['pac_id'], data['est_id']))
-        mysql.connection.commit()
+        """, (data['tur_dia'], data['tur_hora'], doc_id, pac_id, est_id))
 
+        mysql.connection.commit()
         return jsonify({'message': 'Turno creado exitosamente'}), 201
 
     except Exception as e:
-        return jsonify({'error': 'Datos inválidos', 'details': str(e)}), 400
+        return jsonify({'error': 'Error inesperado', 'details': str(e)}), 400
+
+
+
 
 
 @app.route('/turns/<int:turn_id>', methods=['PUT'])
@@ -1058,34 +1178,62 @@ def update_turn(turn_id):
     data = request.get_json()
 
     try:
-        datetime.strptime(data['tur_dia'], '%Y-%m-%d')
-        datetime.strptime(data['tur_hora'], '%H:%M:%S')
+        # Extraer las propiedades del turno a actualizar
+        pac_id = data['pac_id']
+        doc_id = data['doc_id']
+        est_id = data['est_id']
+        tur_dia = data['tur_dia']
+        tur_hora = data['tur_hora']
 
+        # Verificar que los IDs relacionados existan
         cursor = mysql.connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM patients WHERE pac_id = %s", (pac_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({'error': 'El pac_id no existe'}), 400
+
+        cursor.execute("SELECT COUNT(*) FROM doctors WHERE doc_id = %s", (doc_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({'error': 'El doc_id no existe'}), 400
+
+        # Verificar que el turno con el ID especificado exista
+        cursor.execute("SELECT COUNT(*) FROM turns WHERE tur_id = %s", (turn_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({'error': f'El turno con id {turn_id} no existe'}), 404
+
+        # Actualizar el turno
         cursor.execute("""
             UPDATE turns
             SET tur_dia = %s, tur_hora = %s, doc_id = %s, pac_id = %s, est_id = %s
             WHERE tur_id = %s
-        """, (data['tur_dia'], data['tur_hora'], data['doc_id'], data['pac_id'], data['est_id'], turn_id))
-        mysql.connection.commit()
+        """, (tur_dia, tur_hora, doc_id, pac_id, est_id, turn_id))
 
-        return jsonify({'message': 'Turno actualizado exitosamente'})
+        mysql.connection.commit()
+        return jsonify({'message': 'Turno actualizado exitosamente'}), 200
 
     except Exception as e:
-        return jsonify({'error': 'Datos inválidos', 'details': str(e)}), 400
+        return jsonify({'error': 'Error inesperado', 'details': str(e)}), 400
+
+
 
 
 @app.route('/turns/<int:turn_id>', methods=['DELETE'])
 def delete_turn(turn_id):
     try:
+        # Verificar que el turno existe antes de eliminarlo
         cursor = mysql.connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM turns WHERE tur_id = %s", (turn_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({'error': f'El turno con id {turn_id} no existe'}), 404
+
+        # Eliminar el turno
         cursor.execute("DELETE FROM turns WHERE tur_id = %s", (turn_id,))
         mysql.connection.commit()
-
-        return jsonify({'message': 'Turno eliminado exitosamente'})
+        return jsonify({'message': 'Turno eliminado exitosamente'}), 200
 
     except Exception as e:
-        return jsonify({'error': 'Error al eliminar el turno', 'details': str(e)}), 400
+        return jsonify({'error': 'Error inesperado', 'details': str(e)}), 400
+
+
 
 
 if __name__ == '__main__':

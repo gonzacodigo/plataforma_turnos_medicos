@@ -111,19 +111,20 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch("http://127.0.0.1:5000/patients/options");
       if (response.ok) {
         const patients = await response.json();
+        popupPatient.innerHTML = ""; // Limpiar opciones previas
+  
         patients.forEach((patient) => {
           const option = document.createElement("option");
-          option.value = patient.pac_id;
+          option.value = patient.pac_id; // Asegúrate de usar el pac_id numérico
           option.textContent = patient.patient_name;
           popupPatient.appendChild(option);
         });
-      } else {
-        throw new Error("Error al cargar los pacientes");
       }
     } catch (err) {
-      console.error("Error al cargar pacientes:", err.message);
+      console.error("Error al cargar los pacientes:", err.message);
     }
   }
+  
 
   /**
    * Carga los estados disponibles en el selector del popup
@@ -147,132 +148,135 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Crear o actualizar un turno
   async function createAppointment() {
     const turDia = popupTurDia.value.trim();
     const turHora = popupTime.value.trim();
-    const docId = popupDocId.value.trim();
-    const pacId = popupPatient.value.trim();
-    const estId = popupEstId.value.trim();
-
-    if (turDia && turHora && docId && pacId && estId) {
-      const turno = {
-        tur_dia: turDia,
-        tur_hora: `${turHora}:00`, // Asegurar formato HH:MM:SS
-        doc_id: parseInt(docId),
-        pac_id: parseInt(pacId),
-        est_id: parseInt(estId),
-      };
-
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:5000/turns${
-            selectedEvent ? "/" + selectedEvent.id : ""
-          }`,
-          {
-            method: selectedEvent ? "PUT" : "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(turno),
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          alert(result.message);
-
-          // Refrescar eventos y ocultar el popup
-          calendar.refetchEvents();
-          hidePopup();
-        } else {
-          const error = await response.json();
-          throw new Error(error.error || "Error al guardar el turno");
+    const docId = parseInt(popupDocId.value.trim());
+    const pacId = parseInt(popupPatient.value.trim());
+    const estId = parseInt(popupEstId.value.trim());
+  
+    // Verificar si todos los valores son válidos
+    if (!turDia || !turHora || isNaN(docId) || isNaN(pacId) || isNaN(estId)) {
+      alert("Por favor, complete todos los campos correctamente.");
+      return;
+    }
+  
+    // Definir el objeto turno
+    const turno = {
+      tur_dia: turDia,
+      tur_hora: `${turHora}:00`, // Asegurar formato HH:MM:SS
+      doc_id: docId,
+      pac_id: pacId,
+      est_id: estId,
+      status: "Scheduled", // Estado por defecto
+    };
+  
+    console.log("Datos enviados:", turno);
+  
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/turns${selectedEvent ? "/" + selectedEvent.id : ""}`,
+        {
+          method: selectedEvent ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(turno),
         }
-      } catch (err) {
-        console.error("Error al guardar el turno:", err.message);
-        alert(`Error: ${err.message}`);
+      );
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Error al guardar el turno");
       }
-    } else {
-      alert("Por favor, complete todos los campos.");
+  
+      const result = await response.json();
+      alert(result.message);
+      calendar.refetchEvents();
+      hidePopup();
+    } catch (err) {
+      console.error("Error al guardar el turno:", err.message);
+      alert(`Error: ${err.message}`);
     }
   }
+  
 
-  // Cargar horarios disponibles dinámicamente
-  async function loadAvailableSlots(docId, date) {
-    popupTime.innerHTML = ""; // Limpiar horarios previos
+// Cargar horarios disponibles dinámicamente
+async function loadAvailableSlots(docId, date) {
+  popupTime.innerHTML = ""; // Limpiar horarios previos
 
-    if (!docId || !date) {
+  if (!docId || !date) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Seleccione un doctor y una fecha primero";
+    popupTime.appendChild(option);
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:5000/available_slots?doc_id=${docId}&date=${date}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Error al cargar horarios: " + (await response.text()));
+    }
+
+    const slots = await response.json();
+    if (slots.length === 0) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "Seleccione un doctor y una fecha primero";
+      option.textContent = "No hay horarios disponibles";
       popupTime.appendChild(option);
       return;
     }
 
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/available_slots?doc_id=${docId}&date=${date}`
-      );
-      if (response.ok) {
-        const slots = await response.json();
-
-        if (slots.length === 0) {
-          const option = document.createElement("option");
-          option.value = "";
-          option.textContent = "No hay horarios disponibles";
-          popupTime.appendChild(option);
-          return;
-        }
-
-        slots.forEach((slot) => {
-          const option = document.createElement("option");
-          option.value = slot;
-          option.textContent = slot;
-          popupTime.appendChild(option);
-        });
-      } else {
-        console.error("Error al cargar horarios:", await response.text());
-        alert("No se pudieron cargar los horarios disponibles.");
-      }
-    } catch (err) {
-      console.error("Error al cargar horarios:", err.message);
-    }
+    slots.forEach((slot) => {
+      const option = document.createElement("option");
+      option.value = slot;
+      option.textContent = slot;
+      popupTime.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Error al cargar horarios:", err.message);
+    alert("No se pudieron cargar los horarios disponibles.");
   }
+}
 
-  // Escuchar cambios en doctor y fecha
-  popupDocId.addEventListener("change", () => {
-    const docId = popupDocId.value;
-    const date = popupTurDia.value;
+// Escuchar cambios en doctor y fecha
+popupDocId.addEventListener("change", () => {
+  const docId = popupDocId.value;
+  const date = popupTurDia.value;
+  loadAvailableSlots(docId, date);
+});
+
+popupTurDia.addEventListener("change", () => {
+  const docId = popupDocId.value;
+  const date = popupTurDia.value;
+  loadAvailableSlots(docId, date);
+});
+
+// Llamar al cargar los horarios disponibles al abrir para editar
+detailsEdit.addEventListener("click", () => {
+  if (selectedEvent) {
+    const docId = selectedEvent.extendedProps.doc_id;
+    const date = selectedEvent.startStr.split("T")[0];
+
+    // Prellenar los campos con los valores del turno seleccionado
+    popupDocId.value = docId;
+    popupPatient.value = selectedEvent.extendedProps.pac_id;
+    popupEstId.value = selectedEvent.extendedProps.est_id;
+    popupTurDia.value = date;
+
+    // Cargar horarios disponibles para ese doctor y fecha
     loadAvailableSlots(docId, date);
-  });
 
-  popupTurDia.addEventListener("change", () => {
-    const docId = popupDocId.value;
-    const date = popupTurDia.value;
-    loadAvailableSlots(docId, date);
-  });
+    // Mostrar el popup para editar
+    popup.style.display = "block";
+    detailsPopup.style.display = "none";
+  }
+});
 
-  // Llamar al cargar los horarios disponibles al abrir para editar
-  detailsEdit.addEventListener("click", () => {
-    if (selectedEvent) {
-      const docId = selectedEvent.extendedProps.doc_id;
-      const date = selectedEvent.startStr.split("T")[0];
+popupSubmit.addEventListener("click", createAppointment);
 
-      // Prellenar los campos con los valores del turno seleccionado
-      popupDocId.value = docId;
-      popupPatient.value = selectedEvent.extendedProps.pac_id;
-      popupEstId.value = selectedEvent.extendedProps.est_id;
-      popupTurDia.value = date;
-
-      // Cargar horarios disponibles para ese doctor y fecha
-      loadAvailableSlots(docId, date);
-
-      // Mostrar el popup para editar
-      popup.style.display = "block";
-      detailsPopup.style.display = "none";
-    }
-  });
-
-  popupSubmit.addEventListener("click", createAppointment);
 
   // Cancelar un turno
   async function cancelAppointment() {
