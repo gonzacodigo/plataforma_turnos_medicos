@@ -13,7 +13,7 @@ CORS(app)
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = 'localhost'  # Dirección del servidor MySQL
 app.config['MYSQL_USER'] = 'root'       # Usuario de la base de datos
-app.config['MYSQL_PASSWORD'] = ''       # Contraseña del usuario
+app.config['MYSQL_PASSWORD'] = 'toor'       # Contraseña del usuario
 app.config['MYSQL_DB'] = 'clinica'      # Nombre de la base de datos
 
 # Inicializar la conexión con MySQL
