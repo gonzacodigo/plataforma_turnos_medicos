@@ -92,6 +92,21 @@ def delete_type(tip_id):
 # Rutas para el CRUD de la tabla "users"
 # ================================
 
+@app.route('/user_get_id', methods=['POST'])
+def get_id_user():
+    data = request.json  # Obtener los datos JSON del cuerpo de la solicitud
+    usr_id = data.get('usr_id')
+    
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Consulta para buscar el usuario por su ID
+    cursor.execute('SELECT * FROM users WHERE usr_id = %s', (usr_id,))
+    user = cursor.fetchone()  # Obtener un solo usuario
+    
+    if user:
+        return jsonify(user)
+    else:
+        return jsonify({"error": "Usuario no encontrado"}), 401         
 
 @app.route('/users', methods=['GET'])
 def get_users():
